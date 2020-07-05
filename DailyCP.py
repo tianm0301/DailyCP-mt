@@ -125,13 +125,14 @@ class DailyCP:
         body = dict(re.findall(r'''<input type="hidden" name="(.*?)" value="(.*?)"''',ret.text))
         salt = dict(re.findall(r'''<input type="hidden" id="(.*?)" value="(.*?)"''',ret.text))
         body["username"] = username
+        body["dllt"] = "userNamePasswordLogin"
         if "pwdDefaultEncryptSalt" in salt.keys():
             body["password"] = self.passwordEncrypt(password,salt["pwdDefaultEncryptSalt"])
         else: 
             body["password"] = password
         ret = self.request(ret.url,body,False,False,Referer=self.loginUrl).url
         print(self.session.cookies)
-        print("能用吗？不能用的话，有能力的自行改写脚本，没能力的付费咨询我QQ，支持功能定制，这么多学校实在忙不过来。")
+        print("本函数不一定能用")
         return True
 
     def getCollectorList(self):
@@ -150,8 +151,9 @@ class DailyCP:
         ret = self.request("https://{host}/wec-counselor-stu-apps/stu/notice/queryProcessingNoticeList",body)
         return ret["datas"]["rows"]
 
-    def confirmNotice(self, wid):
+    def confirmNotice(self, wid,formWid):
         body = {
+            "formWid":formWid,##bug
             "wid": wid
         }
         ret = self.request("https://{host}/wec-counselor-stu-apps/stu/notice/confirmNotice",body)
@@ -198,13 +200,12 @@ class DailyCP:
 
     def autoComplete(self, address,dbpath):
         collectList = self.getCollectorList()
-        print(collectList)
         for item in collectList:
             if item["isHandled"] == True:continue
             detail = self.getCollectorDetail(item["wid"])
             form = self.getCollectorFormFiled(detail["collector"]["formWid"], detail["collector"]["wid"])
-
             formpath = "{dbpath}/{charac}.json".format(charac=self.getFormCharac(item),dbpath=dbpath)
+            print(item)
             if os.path.exists(formpath):
                 with open(formpath,"rb") as file:
                     form = json.loads(file.read().decode("utf-8"))
@@ -212,13 +213,17 @@ class DailyCP:
                 self.submitCollectorForm(detail["collector"]["formWid"], detail["collector"]["wid"], detail["collector"]["schoolTaskWid"], form, address)
             else:
                 with open(formpath,"wb") as file:
+                    云函数无法写入文件
                     file.write(json.dumps(form,ensure_ascii=False).encode("utf-8"))
+                    打卡失败
                     print("请手动填写{formpath}，之后重新运行脚本".format(formpath=formpath))
+                    Message=message()
+                    Message.sendMessage("请手动打卡，之后重新运行脚本")
                     exit()
 
         confirmList = self.getNoticeList()
         print(confirmList)
-        for item in confirmList:self.confirmNotice(item["noticeWid"])
+        for item in confirmList:self.confirmNotice(item["Wid"],item["formWid"])
 
 
 if __name__ == "__main__":
