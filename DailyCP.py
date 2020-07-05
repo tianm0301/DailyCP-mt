@@ -153,8 +153,8 @@ class DailyCP:
 
     def confirmNotice(self, wid,formWid):
         body = {
-            "formWid": formWid
-            "wid": wid
+            "formWid":formWid
+            "wid":wid
         }
         ret = self.request("https://{host}/wec-counselor-stu-apps/stu/notice/confirmNotice",body)
         print(ret["message"])
